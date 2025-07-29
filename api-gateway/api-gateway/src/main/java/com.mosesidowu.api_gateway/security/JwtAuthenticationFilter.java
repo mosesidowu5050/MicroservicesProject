@@ -1,10 +1,10 @@
 package com.mosesidowu.api_gateway.security;
 
-import com.google.common.net.HttpHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
@@ -19,39 +19,50 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Autowired
     private JwtUtil jwtUtil;
 
-    private static final List<String> PUBLIC_ROUTES = List.of("/users/register-user", "/users/login");
+    private static final List<String> PUBLIC_ROUTES = List.of(
+            "/users/register-user",
+            "/users/login"
+    );
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
+        System.out.println("REQUEST PATH: " + path);
 
-        // Allow public routes
         if (PUBLIC_ROUTES.stream().anyMatch(path::startsWith)) {
+            System.out.println("Public route, skipping JWT check.");
             return chain.filter(exchange);
-        }
-
-        if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-            return onError(exchange, "Missing Authorization Header", HttpStatus.UNAUTHORIZED);
         }
 
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return onError(exchange, "Invalid Authorization Header", HttpStatus.UNAUTHORIZED);
+            System.out.println("Invalid or missing Authorization header.");
+            return onError(exchange, "Missing or invalid Authorization header", HttpStatus.UNAUTHORIZED);
         }
 
         String token = authHeader.substring(7);
+        System.out.println("Extracted token: " + token);
 
         if (!jwtUtil.isTokenValid(token)) {
-            return onError(exchange, "Invalid JWT Token", HttpStatus.UNAUTHORIZED);
+            System.out.println("JWT Token is invalid.");
+            return onError(exchange, "Invalid JWT token", HttpStatus.UNAUTHORIZED);
         }
+
+        // Optional: attach userId to header
+        String userId = jwtUtil.extractUserId(token);
+        exchange = exchange.mutate()
+                .request(r -> r.headers(h -> h.set("X-User-Id", userId)))
+                .build();
 
         return chain.filter(exchange);
     }
 
-    private Mono<Void> onError(ServerWebExchange exchange, String error, HttpStatus status) {
+    private Mono<Void> onError(ServerWebExchange exchange, String missingOrInvalidAuthorizationHeader, HttpStatus httpStatus) {
         ServerHttpResponse response = exchange.getResponse();
-        response.setStatusCode(status);
-        return response.setComplete();
+        response.setStatusCode(httpStatus);
+        response.getHeaders().add(HttpHeaders.CONTENT_TYPE, "application/json");
+        String errorResponse = String.format("{\"error\": \"%s\"}", missingOrInvalidAuthorizationHeader);
+        return response.writeWith(Mono.just(response.bufferFactory().wrap(errorResponse.getBytes())));
     }
 
     @Override

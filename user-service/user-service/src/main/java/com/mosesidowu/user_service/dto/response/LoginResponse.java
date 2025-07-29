@@ -11,5 +11,5 @@ public class LoginResponse {
     private String responseCode;
     private String responseMessage;
     private String token;
-    private String message;
+
 }

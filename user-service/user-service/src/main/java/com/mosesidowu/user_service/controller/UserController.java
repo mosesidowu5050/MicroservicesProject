@@ -6,9 +6,6 @@ import com.mosesidowu.user_service.dto.response.LoginResponse;
 import com.mosesidowu.user_service.dto.response.UserRegistrationResponse;
 import com.mosesidowu.user_service.exception.MicroServiceException;
 import com.mosesidowu.user_service.service.UserService;
-import com.mosesidowu.user_service.service.UserServiceImpl;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,11 +18,6 @@ public class UserController {
 
 
     private final UserService userService;
-
-    @GetMapping("/{id}")
-    public ResponseEntity<String> getUser(@PathVariable String id) {
-        return ResponseEntity.ok("User with ID: " + id);
-    }
 
     @PostMapping("/register-user")
     public ResponseEntity<?> registerUser(@RequestBody UserRegistration userRegistration) {

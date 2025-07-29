@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.swing.text.Utilities;
+import java.util.Optional;
 
 
 @Service
@@ -49,10 +50,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
-    User user = userRepository.findUserByEmail(loginRequest.getEmail());
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail());
+        User user = userRepository.findUserByEmail(loginRequest.getEmail());
+
         if (user != null && user.getPassword().equals(loginRequest.getPassword())) {
-        return LoginResponse.builder()
+            String token = jwtUtil.generateToken(user.getId(), user.getEmail());
+            return LoginResponse.builder()
                 .responseCode(UserUtils.LOGIN_SUCCESS_CODE)
                 .responseMessage(UserUtils.LOGIN_SUCCESS_MESSAGE)
                 .token(token)

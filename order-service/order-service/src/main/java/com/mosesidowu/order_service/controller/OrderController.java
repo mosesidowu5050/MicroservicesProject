@@ -1,23 +1,34 @@
 package com.mosesidowu.order_service.controller;
 
 import com.mosesidowu.order_service.client.UserClient;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.mosesidowu.order_service.data.model.Order;
+import com.mosesidowu.order_service.dto.request.OrderRequest;
+import com.mosesidowu.order_service.service.OrderService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/orders")
+@RequiredArgsConstructor
 public class OrderController {
 
-    @Autowired
-    private UserClient userClient;
+    private final UserClient userClient;
+    private final OrderService orderService;
 
-    @GetMapping("/{orderId}/user/{userId}")
-    public ResponseEntity<String> getOrderDetails(@PathVariable String orderId, @PathVariable String userId) {
-        String userInfo = userClient.getUser(userId);
-        return ResponseEntity.ok("Order ID: " + orderId + " placed by: " + userInfo);
+
+    @PostMapping("/place-order")
+    public ResponseEntity<?> placeOrder(
+            @RequestBody OrderRequest request) {
+        return ResponseEntity.ok(orderService.placeOrder(request));
+    }
+
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Order>> getOrdersByUser(@PathVariable String userId) {
+        userClient.getUser(userId);
+        return ResponseEntity.ok(orderService.getOrdersByUser(userId));
     }
 }
